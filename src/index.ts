@@ -30,6 +30,11 @@ io.on('connection', (socket) => {
     socket.to(socket.data.room).emit('pause', {user: message.user});
   });
 
+  socket.on('change-time', (message) => {
+    console.log('user changed time', message.currentTime, socket.data.user);
+    socket.to(socket.data.room).emit('change-time', {user: message.user, currentTime: message.currentTime});
+  });
+
   socket.on('disconnect', (reason) => {
     console.log('socket disconnect', socket.id, reason);
   });
