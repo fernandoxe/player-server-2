@@ -1,5 +1,10 @@
 import { Server } from 'socket.io';
 
+interface User {
+  id: string;
+  user: string;
+}
+
 const io = new Server(5000, {
   cors: {
     origin: [
@@ -13,29 +18,62 @@ io.on('connection', (socket) => {
     socket.data.user = message.user;
     socket.data.room = message.room;
     socket.join(socket.data.room);
-    socket.to(socket.data.room).emit('user-connected', {user: socket.data.user});
-    console.log('clients >>>>');
-    io.sockets.sockets.forEach(socket => console.log('  >', socket.id, socket.data.user));
+    const users: User[] = [];
+    io.in(socket.data.room).fetchSockets().then(sockets => {
+      sockets.forEach(socket => {
+        users.push({
+          id: socket.data.id,
+          user: socket.data.user,
+        });
+      });
+      socket.emit('connected', {
+        user: socket.data.user,
+        room: socket.data.room,
+        usersInRoom: users,
+      });
+      socket.to(socket.data.room).emit('user-connected', {
+        user: socket.data.user,
+        room: socket.data.room,
+        usersInRoom: users,
+      });
+    });
   });
 
   socket.on('play', (message) => {
-    console.log('user plays', socket.data.user);
-    console.log(socket.data.user, socket.data.room);
-    socket.to(socket.data.room).emit('play', {user: message.user});
+    socket.to(socket.data.room).emit('play', {
+      user: message.user,
+      currentTime: message.currentTime,
+    });
   });
 
   socket.on('pause', (message) => {
-    console.log('user paused', socket.data.user);
-    console.log(socket.data.user, socket.data.room);
-    socket.to(socket.data.room).emit('pause', {user: message.user});
+    socket.to(socket.data.room).emit('pause', {
+      user: message.user,
+      currentTime: message.currentTime,
+    });
   });
 
   socket.on('change-time', (message) => {
-    console.log('user changed time', message.currentTime, socket.data.user);
-    socket.to(socket.data.room).emit('change-time', {user: message.user, currentTime: message.currentTime});
+    socket.to(socket.data.room).emit('change-time', {
+      user: message.user,
+      currentTime: message.currentTime,
+    });
   });
 
   socket.on('disconnect', (reason) => {
-    console.log('socket disconnect', socket.id, reason);
+    const users: User[] = [];
+    io.in(socket.data.room).fetchSockets().then(sockets => {
+      sockets.forEach(socket => {
+        users.push({
+          id: socket.data.id,
+          user: socket.data.user,
+        });
+      });
+      socket.to(socket.data.room).emit('user-disconnected', {
+        user: socket.data.user,
+        room: socket.data.room,
+        usersInRoom: users,
+      });
+    });
   });
 });
