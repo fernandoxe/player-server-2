@@ -60,6 +60,15 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('reaction', (message) => {
+    socket.to(socket.data.room).emit('reaction', {
+      user: message.user,
+      currentTime: message.currentTime,
+      reaction: message.reaction,
+      position: message.position,
+    });
+  });
+
   socket.on('disconnect', (reason) => {
     const users: User[] = [];
     io.in(socket.data.room).fetchSockets().then(sockets => {
