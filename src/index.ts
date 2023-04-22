@@ -21,7 +21,7 @@ io.on('connection', (socket) => {
     io.in(socket.data.room).fetchSockets().then(sockets => {
       sockets.forEach(socket => {
         users.push({
-          id: socket.data.id,
+          id: socket.id,
           user: socket.data.user,
         });
       });
