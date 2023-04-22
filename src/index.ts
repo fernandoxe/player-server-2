@@ -1,15 +1,14 @@
 import { Server } from 'socket.io';
+import { originList } from './config';
 
 interface User {
   id: string;
   user: string;
 }
 
-const io = new Server(5000, {
+const io = new Server(5010, {
   cors: {
-    origin: [
-      'http://localhost:3000'
-    ],
+    origin: originList,
   },
 });
 
