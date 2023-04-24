@@ -13,28 +13,23 @@ const io = new Server(5010, {
 });
 
 io.on('connection', (socket) => {
-  socket.on('join', (message) => {
+  socket.on('join', async (message) => {
     socket.data.user = message.user;
     socket.data.room = message.room;
     socket.join(socket.data.room);
-    const users: User[] = [];
-    io.in(socket.data.room).fetchSockets().then(sockets => {
-      sockets.forEach(socket => {
-        users.push({
-          id: socket.id,
-          user: socket.data.user,
-        });
-      });
-      socket.emit('connected', {
-        user: socket.data.user,
-        room: socket.data.room,
-        usersInRoom: users,
-      });
-      socket.to(socket.data.room).emit('user-connected', {
-        user: socket.data.user,
-        room: socket.data.room,
-        usersInRoom: users,
-      });
+
+    const users = await getUsersInSameRoom(socket.data.room);
+
+    socket.emit('connected', {
+      user: socket.data.user,
+      room: socket.data.room,
+      users: users,
+    });
+
+    socket.to(socket.data.room).emit('user-connected', {
+      user: socket.data.user,
+      room: socket.data.room,
+      users: users,
     });
   });
 
@@ -68,20 +63,42 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('disconnect', (reason) => {
-    const users: User[] = [];
-    io.in(socket.data.room).fetchSockets().then(sockets => {
-      sockets.forEach(socket => {
-        users.push({
-          id: socket.data.id,
-          user: socket.data.user,
-        });
-      });
-      socket.to(socket.data.room).emit('user-disconnected', {
-        user: socket.data.user,
-        room: socket.data.room,
-        usersInRoom: users,
-      });
+  socket.on('change-user', async (message) => {
+    socket.data.user = message.user;
+    const users = await getUsersInSameRoom(socket.data.room);
+
+    socket.emit('change-user', {
+      user: socket.data.user,
+      room: socket.data.room,
+      users: users,
+    });
+
+    socket.to(socket.data.room).emit('change-user', {
+      user: socket.data.user,
+      room: socket.data.room,
+      users: users,
+    });
+  });
+
+  socket.on('disconnect', async (reason) => {
+    const users = await getUsersInSameRoom(socket.data.room);
+    socket.to(socket.data.room).emit('user-disconnected', {
+      user: socket.data.user,
+      room: socket.data.room,
+      users: users,
     });
   });
 });
+
+const getUsersInSameRoom = async (room: string) => {
+  const users: User[] = [];
+  const socketsInSameRoom = await io.in(room).fetchSockets();
+  socketsInSameRoom.forEach(socket => {
+    users.push({
+      id: socket.id,
+      user: socket.data.user,
+    });
+  });
+  return users;
+}
+
