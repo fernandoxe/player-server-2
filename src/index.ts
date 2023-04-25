@@ -21,13 +21,19 @@ io.on('connection', (socket) => {
     const users = await getUsersInSameRoom(socket.data.room);
 
     socket.emit('connected', {
-      user: socket.data.user,
+      user: {
+        id: socket.id,
+        user: socket.data.user,
+      },
       room: socket.data.room,
       users: users,
     });
 
     socket.to(socket.data.room).emit('user-connected', {
-      user: socket.data.user,
+      user: {
+        id: socket.id,
+        user: socket.data.user,
+      },
       room: socket.data.room,
       users: users,
     });
@@ -35,28 +41,40 @@ io.on('connection', (socket) => {
 
   socket.on('play', (message) => {
     socket.to(socket.data.room).emit('play', {
-      user: message.user,
+      user: {
+        id: socket.id,
+        user: socket.data.user,
+      },
       currentTime: message.currentTime,
     });
   });
 
   socket.on('pause', (message) => {
     socket.to(socket.data.room).emit('pause', {
-      user: message.user,
+      user: {
+        id: socket.id,
+        user: socket.data.user,
+      },
       currentTime: message.currentTime,
     });
   });
 
   socket.on('change-time', (message) => {
     socket.to(socket.data.room).emit('change-time', {
-      user: message.user,
+      user: {
+        id: socket.id,
+        user: socket.data.user,
+      },
       currentTime: message.currentTime,
     });
   });
 
   socket.on('reaction', (message) => {
     socket.to(socket.data.room).emit('reaction', {
-      user: message.user,
+      user: {
+        id: socket.id,
+        user: socket.data.user,
+      },
       currentTime: message.currentTime,
       reaction: message.reaction,
       position: message.position,
@@ -68,13 +86,19 @@ io.on('connection', (socket) => {
     const users = await getUsersInSameRoom(socket.data.room);
 
     socket.emit('change-user', {
-      user: socket.data.user,
+      user: {
+        id: socket.id,
+        user: socket.data.user,
+      },
       room: socket.data.room,
       users: users,
     });
 
     socket.to(socket.data.room).emit('change-user', {
-      user: socket.data.user,
+      user: {
+        id: socket.id,
+        user: socket.data.user,
+      },
       room: socket.data.room,
       users: users,
     });
@@ -83,7 +107,10 @@ io.on('connection', (socket) => {
   socket.on('disconnect', async (reason) => {
     const users = await getUsersInSameRoom(socket.data.room);
     socket.to(socket.data.room).emit('user-disconnected', {
-      user: socket.data.user,
+      user: {
+        id: socket.id,
+        user: socket.data.user,
+      },
       room: socket.data.room,
       users: users,
     });
