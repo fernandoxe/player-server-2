@@ -78,6 +78,7 @@ io.on('connection', (socket) => {
       currentTime: message.currentTime,
       reaction: message.reaction,
       position: message.position,
+      size: message.size,
     });
   });
 
