@@ -1,21 +1,26 @@
+import './instrument';
 import { Server } from 'socket.io';
 import { originList } from './config';
 
-interface User {
+interface UserI {
   id: string;
-  user: string;
+  name: string;
+  currentTime: number;
 }
 
-const io = new Server(5010, {
+const io = new Server(5000, {
   cors: {
     origin: originList,
   },
+  serveClient: false,
+  path: '/ws/socket.io',
 });
 
 io.on('connection', (socket) => {
   socket.on('join', async (message) => {
     socket.data.user = message.user;
     socket.data.room = message.room;
+    socket.data.currentTime = message.currentTime;
     socket.join(socket.data.room);
 
     const users = await getUsersInSameRoom(socket.data.room);
@@ -23,7 +28,7 @@ io.on('connection', (socket) => {
     socket.emit('connected', {
       user: {
         id: socket.id,
-        user: socket.data.user,
+        name: socket.data.user,
       },
       room: socket.data.room,
       users: users,
@@ -32,7 +37,7 @@ io.on('connection', (socket) => {
     socket.to(socket.data.room).emit('user-connected', {
       user: {
         id: socket.id,
-        user: socket.data.user,
+        name: socket.data.user,
       },
       room: socket.data.room,
       users: users,
@@ -43,7 +48,7 @@ io.on('connection', (socket) => {
     socket.to(socket.data.room).emit('play', {
       user: {
         id: socket.id,
-        user: socket.data.user,
+        name: socket.data.user,
       },
       currentTime: message.currentTime,
     });
@@ -53,7 +58,7 @@ io.on('connection', (socket) => {
     socket.to(socket.data.room).emit('pause', {
       user: {
         id: socket.id,
-        user: socket.data.user,
+        name: socket.data.user,
       },
       currentTime: message.currentTime,
     });
@@ -63,7 +68,7 @@ io.on('connection', (socket) => {
     socket.to(socket.data.room).emit('change-time', {
       user: {
         id: socket.id,
-        user: socket.data.user,
+        name: socket.data.user,
       },
       currentTime: message.currentTime,
     });
@@ -73,12 +78,18 @@ io.on('connection', (socket) => {
     socket.to(socket.data.room).emit('reaction', {
       user: {
         id: socket.id,
-        user: socket.data.user,
+        name: socket.data.user,
       },
       currentTime: message.currentTime,
       reaction: message.reaction,
-      position: message.position,
-      size: message.size,
+    });
+  });
+
+  socket.on('check', async (message) => {
+    socket.data.currentTime = message.currentTime;
+    const users = await getUsersInSameRoom(socket.data.room);
+    socket.emit('check', {
+      users: users,
     });
   });
 
@@ -89,7 +100,7 @@ io.on('connection', (socket) => {
     socket.emit('change-user', {
       user: {
         id: socket.id,
-        user: socket.data.user,
+        name: socket.data.user,
       },
       room: socket.data.room,
       users: users,
@@ -98,7 +109,7 @@ io.on('connection', (socket) => {
     socket.to(socket.data.room).emit('change-user', {
       user: {
         id: socket.id,
-        user: socket.data.user,
+        name: socket.data.user,
       },
       room: socket.data.room,
       users: users,
@@ -110,7 +121,7 @@ io.on('connection', (socket) => {
     socket.to(socket.data.room).emit('user-disconnected', {
       user: {
         id: socket.id,
-        user: socket.data.user,
+        name: socket.data.user,
       },
       room: socket.data.room,
       users: users,
@@ -119,12 +130,13 @@ io.on('connection', (socket) => {
 });
 
 const getUsersInSameRoom = async (room: string) => {
-  const users: User[] = [];
+  const users: UserI[] = [];
   const socketsInSameRoom = await io.in(room).fetchSockets();
   socketsInSameRoom.forEach(socket => {
     users.push({
       id: socket.id,
-      user: socket.data.user,
+      name: socket.data.user,
+      currentTime: socket.data.currentTime,
     });
   });
   return users;
